@@ -9,7 +9,10 @@ use Webidea24\MagentoComposerPatches\Configuration\ComposerPatchMap;
 
 final class ComposerPatchMapTest extends TestCase
 {
-    private string $temporaryDirectory;
+    /**
+     * @var string
+     */
+    private $temporaryDirectory;
 
     protected function setUp(): void
     {
@@ -52,7 +55,7 @@ JSON
         $this->removeDirectory($this->temporaryDirectory);
     }
 
-    public function testItMergesAndRemovesOnlyItsOwnRemotePatches(): void
+    public function testItReplacesOnlyItsOwnRemotePatches()
     {
         $patchesFile = $this->temporaryDirectory . '/composer.patches.json';
         $patchMap = new ComposerPatchMap();
@@ -67,15 +70,14 @@ JSON
         self::assertSame('patches/custom.patch', $patches['Custom patch']);
         self::assertSame(
             'https://patches.example/magento/2.4.9/security/magento-module-customer.patch',
-            $patches['[webidea24/magento-composer-patches] Bundled Magento 2.4.9 security update 2026-07-001-CE'],
+            $patches['[webidea24/magento-composer-patches] Bundled Magento 2.4.9 security update 2026-07-001-CE']
         );
 
-        self::assertSame(1, $patchMap->removeGeneratedPatchUrls($patchesFile));
-        self::assertSame('patches/custom.patch', $this->getCustomerPatches($patchesFile)['Custom patch']);
-        self::assertSame(0, $patchMap->removeGeneratedPatchUrls($patchesFile));
+        $patchMap->replaceGeneratedPatchUrls($patchesFile, 'https://patches.example/magento', array());
+        self::assertSame(array('Custom patch' => 'patches/custom.patch'), $this->getCustomerPatches($patchesFile));
     }
 
-    public function testItCanMergeDirectlyIntoComposerExtra(): void
+    public function testItCanMergeDirectlyIntoComposerExtra()
     {
         $composerFile = $this->temporaryDirectory . '/composer.json';
         file_put_contents(
@@ -103,7 +105,7 @@ JSON
                 'package' => 'magento/module-customer',
                 'path' => '2.4.9/security/magento-module-customer.patch',
             ]],
-            true,
+            true
         );
 
         $configuration = $this->readJson($composerFile);
@@ -114,10 +116,10 @@ JSON
         self::assertIsArray($configuration['extra']['patches']['magento/module-customer']);
         self::assertSame(
             'https://patches.example/magento/2.4.9/security/magento-module-customer.patch',
-            $configuration['extra']['patches']['magento/module-customer']['[webidea24/magento-composer-patches] Bundled Magento 2.4.9 security update 2026-07-001-CE'],
+            $configuration['extra']['patches']['magento/module-customer']['[webidea24/magento-composer-patches] Bundled Magento 2.4.9 security update 2026-07-001-CE']
         );
 
-        self::assertSame(1, $patchMap->removeGeneratedPatchUrls($composerFile, true));
+        $patchMap->replaceGeneratedPatchUrls($composerFile, 'https://patches.example/magento', array(), true);
         $configuration = $this->readJson($composerFile);
         self::assertIsArray($configuration['extra']);
         self::assertIsArray($configuration['extra']['patches']);
@@ -125,14 +127,14 @@ JSON
             [
                 'Custom patch' => 'patches/custom.patch',
             ],
-            $configuration['extra']['patches']['magento/module-customer'],
+            $configuration['extra']['patches']['magento/module-customer']
         );
     }
 
     /**
      * @return array<string, string>
      */
-    private function getCustomerPatches(string $path): array
+    private function getCustomerPatches($path)
     {
         $configuration = $this->readJson($path);
         self::assertArrayHasKey('patches', $configuration);
@@ -153,11 +155,12 @@ JSON
     /**
      * @return array<string, mixed>
      */
-    private function readJson(string $path): array
+    private function readJson($path)
     {
         $contents = file_get_contents($path);
         self::assertIsString($contents);
-        $configuration = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
+        $configuration = json_decode($contents, true);
+        self::assertSame(JSON_ERROR_NONE, json_last_error());
         self::assertIsArray($configuration);
 
         $result = [];
@@ -169,7 +172,7 @@ JSON
         return $result;
     }
 
-    private function removeDirectory(string $directory): void
+    private function removeDirectory($directory)
     {
         foreach (scandir($directory) ?: [] as $entry) {
             if ($entry === '.' || $entry === '..') {

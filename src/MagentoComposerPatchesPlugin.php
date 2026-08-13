@@ -15,22 +15,22 @@ use Composer\Plugin\PluginInterface;
  */
 final class MagentoComposerPatchesPlugin implements PluginInterface, Capable
 {
-    public function activate(Composer $composer, IOInterface $io): void
+    public function activate(Composer $composer, IOInterface $io)
     {
     }
 
-    public function deactivate(Composer $composer, IOInterface $io): void
+    public function deactivate(Composer $composer, IOInterface $io)
     {
     }
 
-    public function uninstall(Composer $composer, IOInterface $io): void
+    public function uninstall(Composer $composer, IOInterface $io)
     {
     }
 
     /**
      * @return array<class-string, class-string>
      */
-    public function getCapabilities(): array
+    public function getCapabilities()
     {
         return [
             CommandProvider::class => ComposerCommandProvider::class,

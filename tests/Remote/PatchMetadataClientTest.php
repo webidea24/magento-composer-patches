@@ -9,7 +9,10 @@ use Webidea24\MagentoComposerPatches\Remote\PatchMetadataClient;
 
 final class PatchMetadataClientTest extends TestCase
 {
-    private string $temporaryDirectory;
+    /**
+     * @var string
+     */
+    private $temporaryDirectory;
 
     protected function setUp(): void
     {
@@ -43,7 +46,7 @@ JSON
         rmdir($this->temporaryDirectory);
     }
 
-    public function testItReturnsOnlyPatchesForTheRequestedMagentoVersion(): void
+    public function testItReturnsOnlyPatchesForTheRequestedMagentoVersion()
     {
         self::assertSame([
             [
@@ -53,7 +56,7 @@ JSON
             ],
         ], (new PatchMetadataClient())->getPatchesForMagentoVersion(
             'file://' . $this->temporaryDirectory,
-            '2.4.7-p10',
+            '2.4.7-p10'
         ));
     }
 }

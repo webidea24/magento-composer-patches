@@ -8,28 +8,29 @@ use Composer\Command\BaseCommand;
 use Composer\Composer;
 use Composer\IO\IOInterface;
 use Composer\Plugin\Capability\CommandProvider;
-use Webidea24\MagentoComposerPatches\Command\RemovePatchesCommand;
 use Webidea24\MagentoComposerPatches\Command\SynchronizePatchesCommand;
 
 final class ComposerCommandProvider implements CommandProvider
 {
     /**
+     * @var array{composer: Composer, io: IOInterface}
+     */
+    private $arguments;
+
+    /**
      * @param array{composer: Composer, io: IOInterface} $arguments
      */
-    public function __construct(
-        private readonly array $arguments,
-    ) {
+    public function __construct(array $arguments)
+    {
+        $this->arguments = $arguments;
     }
 
     /**
      * @return list<BaseCommand>
      */
-    public function getCommands(): array
+    public function getCommands()
     {
-        $commands = [
-            new SynchronizePatchesCommand(),
-            new RemovePatchesCommand(),
-        ];
+        $commands = [new SynchronizePatchesCommand()];
         foreach ($commands as $command) {
             $command->setComposer($this->arguments['composer']);
             $command->setIO($this->arguments['io']);

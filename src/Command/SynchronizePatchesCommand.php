@@ -17,14 +17,14 @@ final class SynchronizePatchesCommand extends BaseCommand
             ->setDescription('Merge matching Magento patch URLs.');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    protected function execute(InputInterface $input, OutputInterface $output)
     {
         $synchronizedPatches = (new PatchUrlSynchronizer($this->requireComposer()))->synchronize();
         $this->getIO()
             ->write(sprintf(
                 '<info>Merged %d remote package patch%s.</info>',
                 $synchronizedPatches,
-                $synchronizedPatches === 1 ? '' : 'es',
+                $synchronizedPatches === 1 ? '' : 'es'
             ));
 
         return 0;

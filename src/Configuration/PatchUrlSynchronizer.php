@@ -6,7 +6,6 @@ namespace Webidea24\MagentoComposerPatches\Configuration;
 
 use Composer\Composer;
 use InvalidArgumentException;
-use JsonException;
 use RuntimeException;
 use Webidea24\MagentoComposerPatches\Remote\PatchMetadataClient;
 
@@ -15,14 +14,19 @@ use Webidea24\MagentoComposerPatches\Remote\PatchMetadataClient;
  */
 final class PatchUrlSynchronizer
 {
-    private const DEFAULT_PATCH_BASE_URL = 'https://patches.webidea.dev/security/magento/';
+    const DEFAULT_PATCH_BASE_URL = 'https://patches.webidea.dev/security/magento/';
 
-    public function __construct(
-        private readonly Composer $composer,
-    ) {
+    /**
+     * @var Composer
+     */
+    private $composer;
+
+    public function __construct(Composer $composer)
+    {
+        $this->composer = $composer;
     }
 
-    public function synchronize(): int
+    public function synchronize()
     {
         $version = $this->findInstalledMagentoVersion();
         if ($version === null) {
@@ -39,23 +43,11 @@ final class PatchUrlSynchronizer
             $patchesFile['path'],
             $patchBaseUrl,
             $patches,
-            $patchesFile['isComposerFile'],
+            $patchesFile['isComposerFile']
         );
     }
 
-    public function remove(): int
-    {
-        $composerFile = $this->getRootComposerFile();
-        $composerConfiguration = $this->readComposerConfiguration($composerFile);
-        $patchesFile = $this->resolvePatchConfigurationFile($composerFile, $composerConfiguration);
-
-        return (new ComposerPatchMap())->removeGeneratedPatchUrls(
-            $patchesFile['path'],
-            $patchesFile['isComposerFile'],
-        );
-    }
-
-    private function findInstalledMagentoVersion(): ?string
+    private function findInstalledMagentoVersion()
     {
         foreach ($this->composer->getRepositoryManager()->getLocalRepository()->getPackages() as $package) {
             if ($package->getName() === 'magento/product-community-edition') {
@@ -63,28 +55,34 @@ final class PatchUrlSynchronizer
             }
         }
 
-        $require = $this->composer->getPackage()
-            ->getRequires()['magento/product-community-edition'] ?? null;
+        $requires = $this->composer->getPackage()->getRequires();
+        $require = isset($requires['magento/product-community-edition'])
+            ? $requires['magento/product-community-edition']
+            : null;
 
         return $require === null ? null : $this->toExactMagentoVersion($require->getPrettyConstraint());
     }
 
     /**
-     * @param array<string, mixed> $composerConfiguration
+     * @param array $composerConfiguration
      */
-    private function readPatchBaseUrl(array $composerConfiguration): string
+    private function readPatchBaseUrl(array $composerConfiguration)
     {
-        $extra = $composerConfiguration['extra'] ?? [];
+        $extra = isset($composerConfiguration['extra']) ? $composerConfiguration['extra'] : array();
         if (!is_array($extra)) {
             throw new InvalidArgumentException('extra must be an object.');
         }
 
-        $configuration = $extra['composer-magento-patches'] ?? [];
+        $configuration = isset($extra['composer-magento-patches'])
+            ? $extra['composer-magento-patches']
+            : array();
         if (!is_array($configuration)) {
             throw new InvalidArgumentException('extra.composer-magento-patches must be an object.');
         }
 
-        $baseUrl = $configuration['patch-base-url'] ?? self::DEFAULT_PATCH_BASE_URL;
+        $baseUrl = isset($configuration['patch-base-url'])
+            ? $configuration['patch-base-url']
+            : self::DEFAULT_PATCH_BASE_URL;
         if (!is_string($baseUrl) || trim($baseUrl) === '') {
             throw new InvalidArgumentException('extra.composer-magento-patches.patch-base-url must be a non-empty URL.');
         }
@@ -92,7 +90,7 @@ final class PatchUrlSynchronizer
         return $baseUrl;
     }
 
-    private function getRootComposerFile(): string
+    private function getRootComposerFile()
     {
         $workingDirectory = getcwd();
         if ($workingDirectory === false) {
@@ -112,53 +110,45 @@ final class PatchUrlSynchronizer
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array
      */
-    private function readComposerConfiguration(string $composerFile): array
+    private function readComposerConfiguration($composerFile)
     {
         $contents = file_get_contents($composerFile);
         if ($contents === false) {
             throw new RuntimeException(sprintf('Cannot read Composer configuration: %s', $composerFile));
         }
 
-        try {
-            $configuration = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException $jsonException) {
-            throw new RuntimeException(sprintf('Cannot parse Composer configuration %s: %s', $composerFile, $jsonException->getMessage()), 0, $jsonException);
+        $configuration = json_decode($contents, true);
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($configuration)) {
+            throw new RuntimeException(sprintf('Cannot parse Composer configuration: %s', $composerFile));
         }
 
-        if (!is_array($configuration) || array_is_list($configuration)) {
-            throw new RuntimeException(sprintf('Composer configuration must contain a JSON object: %s', $composerFile));
-        }
-
-        $normalizedConfiguration = [];
         foreach ($configuration as $key => $value) {
             if (!is_string($key)) {
                 throw new RuntimeException(sprintf('Composer configuration must contain a JSON object: %s', $composerFile));
             }
-
-            $normalizedConfiguration[$key] = $value;
         }
 
-        return $normalizedConfiguration;
+        return $configuration;
     }
 
     /**
-     * @param array<string, mixed> $composerConfiguration
-     * @return array{path: string, isComposerFile: bool}
+     * @param array $composerConfiguration
+     * @return array
      */
-    private function resolvePatchConfigurationFile(string $composerFile, array $composerConfiguration): array
+    private function resolvePatchConfigurationFile($composerFile, array $composerConfiguration)
     {
-        $extra = $composerConfiguration['extra'] ?? [];
+        $extra = isset($composerConfiguration['extra']) ? $composerConfiguration['extra'] : array();
         if (!is_array($extra)) {
             throw new InvalidArgumentException('extra must be an object.');
         }
 
         if (!array_key_exists('patches-file', $extra)) {
-            return [
+            return array(
                 'path' => $composerFile,
                 'isComposerFile' => true,
-            ];
+            );
         }
 
         $patchesFile = $extra['patches-file'];
@@ -166,21 +156,21 @@ final class PatchUrlSynchronizer
             throw new InvalidArgumentException('extra.patches-file must be a non-empty file path.');
         }
 
-        return [
+        return array(
             'path' => $this->isAbsolutePath($patchesFile)
                 ? $patchesFile
                 : dirname($composerFile) . DIRECTORY_SEPARATOR . $patchesFile,
             'isComposerFile' => false,
-        ];
+        );
     }
 
-    private function isAbsolutePath(string $path): bool
+    private function isAbsolutePath($path)
     {
-        return str_starts_with($path, DIRECTORY_SEPARATOR)
-            || (bool) preg_match('{^[A-Za-z]:[\\/]}', $path);
+        return strpos($path, DIRECTORY_SEPARATOR) === 0
+            || preg_match('{^[A-Za-z]:[\\/]}', $path) === 1;
     }
 
-    private function toExactMagentoVersion(string $version): ?string
+    private function toExactMagentoVersion($version)
     {
         return preg_match('/^\d+\.\d+\.\d+(?:-p\d+)?$/', $version) === 1 ? $version : null;
     }
