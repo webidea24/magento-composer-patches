@@ -92,6 +92,12 @@ final class PatchFileBuilder
                         $fragment['target'],
                         $mappedPackage['source'],
                     );
+                } else {
+                    $contents = PatchFileSplitter::replaceTargetPath(
+                        $contents,
+                        $fragment['target'],
+                        substr($fragment['target'], strlen('vendor/' . $packageName . '/')),
+                    );
                 }
 
                 $fragmentsByPackage[$packageName][] = $contents;

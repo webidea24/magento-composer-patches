@@ -68,6 +68,8 @@ PATCH
         self::assertMatchesRegularExpression('/magento-module-customer-[a-f0-9]{8}\\.patch$/', $customerPatch[0]);
         $customerContents = file_get_contents($customerPatch[0]);
         self::assertIsString($customerContents);
+        self::assertStringContainsString('diff --git a/Model/Customer.php b/Model/Customer.php', $customerContents);
+        self::assertStringNotContainsString('vendor/magento/module-customer/', $customerContents);
         self::assertStringEndsWith('-' . substr(hash('sha256', $customerContents), 0, 8) . '.patch', $customerPatch[0]);
 
         $metadata = file_get_contents($outputDirectory . '/2.4.9/meta.json');

@@ -176,7 +176,8 @@ Run the build command in this repository:
 composer run build-patches
 ```
 
-The source patches below `magento-patches/<magento-version>/` are split into one file per affected Composer package. The
+The source patches below `magento-patches/<magento-version>/` are split into one file per affected Composer package.
+Paths inside each generated patch are relative to that package, without the `vendor/<vendor>/<package>/` prefix. The
 generated output is:
 
 ```text
