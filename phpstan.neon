@@ -1,0 +1,10 @@
+parameters:
+    paths:
+        - src
+        - tests
+    level: max
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        - '#with no value type specified in iterable type array.#'
+        - '#type has no value type specified in iterable type array.#'
+        - '#has no value type specified in iterable type array.#'
