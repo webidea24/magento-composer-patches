@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Webidea24\MagentoComposerPatches\Configuration;
 
-use JsonException;
 use RuntimeException;
 
 /**
@@ -21,16 +20,18 @@ final class ComposerPatchMap
         string $patchesFile,
         string $baseUrl,
         array $patches,
-        bool $mergeIntoComposerExtra = false,
+        bool $mergeIntoComposerExtra = false
     ): int {
         $configuration = $this->readConfiguration($patchesFile);
         $patchMap = $this->readPatchMap($configuration, $patchesFile, $mergeIntoComposerExtra);
-        $patchMap = $this->removeGeneratedEntriesFromPatchMap($patchMap, removeEmptyPackages: false)['patchMap'];
+        $patchMap = $this->removeGeneratedEntriesFromPatchMap($patchMap, false)['patchMap'];
 
         $generatedPatches = $this->createRemotePatchUrls($baseUrl, $patches);
 
         foreach ($generatedPatches as $packageName => $packagePatches) {
-            $patchMap[$packageName] ??= [];
+            if (!isset($patchMap[$packageName])) {
+                $patchMap[$packageName] = [];
+            }
             foreach ($packagePatches as $description => $url) {
                 $patchMap[$packageName][$description] = $url;
             }
@@ -41,26 +42,6 @@ final class ComposerPatchMap
         $this->writeConfiguration($patchesFile, $configuration);
 
         return array_sum(array_map('count', $generatedPatches));
-    }
-
-    public function removeGeneratedPatchUrls(string $patchesFile, bool $fromComposerExtra = false): int
-    {
-        if (!is_file($patchesFile)) {
-            return 0;
-        }
-
-        $configuration = $this->readConfiguration($patchesFile);
-        $patchMap = $this->readPatchMap($configuration, $patchesFile, $fromComposerExtra);
-        $result = $this->removeGeneratedEntriesFromPatchMap($patchMap);
-        $removedPatches = $result['count'];
-        if ($removedPatches === 0) {
-            return 0;
-        }
-
-        $this->writePatchMap($configuration, $patchesFile, $fromComposerExtra, $result['patchMap']);
-        $this->writeConfiguration($patchesFile, $configuration);
-
-        return $removedPatches;
     }
 
     /**
@@ -99,13 +80,12 @@ final class ComposerPatchMap
             throw new RuntimeException(sprintf('Cannot read Composer patches file: %s', $patchesFile));
         }
 
-        try {
-            $configuration = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException $jsonException) {
-            throw new RuntimeException(sprintf('Cannot parse Composer patches file %s: %s', $patchesFile, $jsonException->getMessage()), 0, $jsonException);
+        $configuration = json_decode($contents, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new RuntimeException(sprintf('Cannot parse Composer patches file %s: %s', $patchesFile, json_last_error_msg()));
         }
 
-        if (!is_array($configuration) || array_is_list($configuration)) {
+        if (!is_array($configuration) || $this->isList($configuration)) {
             throw new RuntimeException(sprintf('Composer patches file must contain a JSON object: %s', $patchesFile));
         }
 
@@ -169,7 +149,7 @@ final class ComposerPatchMap
         $count = 0;
         foreach ($patchMap as $packageName => $packagePatches) {
             foreach ($packagePatches as $description => $_url) {
-                if (str_starts_with($description, self::DESCRIPTION_PREFIX)) {
+                if (strpos($description, self::DESCRIPTION_PREFIX) === 0) {
                     unset($patchMap[$packageName][$description]);
                     ++$count;
                 }
@@ -232,14 +212,31 @@ final class ComposerPatchMap
             throw new RuntimeException(sprintf('Cannot create Composer patches directory: %s', $directory));
         }
 
-        try {
-            $contents = json_encode($configuration, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . PHP_EOL;
-        } catch (JsonException $jsonException) {
-            throw new RuntimeException(sprintf('Cannot encode Composer patches file %s: %s', $patchesFile, $jsonException->getMessage()), 0, $jsonException);
+        $contents = json_encode($configuration, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        if ($contents === false) {
+            throw new RuntimeException(sprintf('Cannot encode Composer patches file %s: %s', $patchesFile, json_last_error_msg()));
         }
+        $contents .= PHP_EOL;
 
         if (file_put_contents($patchesFile, $contents) === false) {
             throw new RuntimeException(sprintf('Cannot write Composer patches file: %s', $patchesFile));
         }
+    }
+
+    /**
+     * @param array<mixed> $value
+     */
+    private function isList(array $value): bool
+    {
+        $expectedKey = 0;
+        foreach ($value as $key => $_item) {
+            if ($key !== $expectedKey) {
+                return false;
+            }
+
+            ++$expectedKey;
+        }
+
+        return true;
     }
 }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Webidea24\MagentoComposerPatches\Remote;
 
-use JsonException;
 use RuntimeException;
 
 /**
@@ -23,13 +22,12 @@ final class PatchMetadataClient
             throw new RuntimeException(sprintf('Cannot download patch metadata: %s', $metadataUrl));
         }
 
-        try {
-            $metadata = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException $jsonException) {
-            throw new RuntimeException(sprintf('Cannot parse patch metadata %s: %s', $metadataUrl, $jsonException->getMessage()), 0, $jsonException);
+        $metadata = json_decode($contents, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new RuntimeException(sprintf('Cannot parse patch metadata %s: %s', $metadataUrl, json_last_error_msg()));
         }
 
-        if (!is_array($metadata) || array_is_list($metadata) || !isset($metadata['patches']) || !is_array($metadata['patches'])) {
+        if (!is_array($metadata) || $this->isList($metadata) || !isset($metadata['patches']) || !is_array($metadata['patches'])) {
             throw new RuntimeException(sprintf('Patch metadata must contain a patches array: %s', $metadataUrl));
         }
 
@@ -65,5 +63,22 @@ final class PatchMetadataClient
         }
 
         return $patches;
+    }
+
+    /**
+     * @param array<mixed> $value
+     */
+    private function isList(array $value): bool
+    {
+        $expectedKey = 0;
+        foreach ($value as $key => $_item) {
+            if ($key !== $expectedKey) {
+                return false;
+            }
+
+            ++$expectedKey;
+        }
+
+        return true;
     }
 }

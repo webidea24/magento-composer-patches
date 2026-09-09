@@ -9,7 +9,10 @@ use Webidea24\MagentoComposerPatches\Configuration\ComposerPatchMap;
 
 final class ComposerPatchMapTest extends TestCase
 {
-    private string $temporaryDirectory;
+    /**
+     * @var string
+     */
+    private $temporaryDirectory;
 
     protected function setUp(): void
     {
@@ -52,7 +55,7 @@ JSON
         $this->removeDirectory($this->temporaryDirectory);
     }
 
-    public function testItMergesAndRemovesOnlyItsOwnRemotePatches(): void
+    public function testItReplacesOnlyItsOwnRemotePatches(): void
     {
         $patchesFile = $this->temporaryDirectory . '/composer.patches.json';
         $patchMap = new ComposerPatchMap();
@@ -67,12 +70,9 @@ JSON
         self::assertSame('patches/custom.patch', $patches['Custom patch']);
         self::assertSame(
             'https://patches.example/magento/2.4.9/security/magento-module-customer.patch',
-            $patches['[webidea24/magento-composer-patches] Bundled Magento 2.4.9 security update 2026-07-001-CE'],
+            $patches['[webidea24/magento-composer-patches] Bundled Magento 2.4.9 security update 2026-07-001-CE']
         );
 
-        self::assertSame(1, $patchMap->removeGeneratedPatchUrls($patchesFile));
-        self::assertSame('patches/custom.patch', $this->getCustomerPatches($patchesFile)['Custom patch']);
-        self::assertSame(0, $patchMap->removeGeneratedPatchUrls($patchesFile));
     }
 
     public function testItCanMergeDirectlyIntoComposerExtra(): void
@@ -103,7 +103,7 @@ JSON
                 'package' => 'magento/module-customer',
                 'path' => '2.4.9/security/magento-module-customer.patch',
             ]],
-            true,
+            true
         );
 
         $configuration = $this->readJson($composerFile);
@@ -114,19 +114,9 @@ JSON
         self::assertIsArray($configuration['extra']['patches']['magento/module-customer']);
         self::assertSame(
             'https://patches.example/magento/2.4.9/security/magento-module-customer.patch',
-            $configuration['extra']['patches']['magento/module-customer']['[webidea24/magento-composer-patches] Bundled Magento 2.4.9 security update 2026-07-001-CE'],
+            $configuration['extra']['patches']['magento/module-customer']['[webidea24/magento-composer-patches] Bundled Magento 2.4.9 security update 2026-07-001-CE']
         );
 
-        self::assertSame(1, $patchMap->removeGeneratedPatchUrls($composerFile, true));
-        $configuration = $this->readJson($composerFile);
-        self::assertIsArray($configuration['extra']);
-        self::assertIsArray($configuration['extra']['patches']);
-        self::assertSame(
-            [
-                'Custom patch' => 'patches/custom.patch',
-            ],
-            $configuration['extra']['patches']['magento/module-customer'],
-        );
     }
 
     public function testItSortsGeneratedPatchNamesNaturallyWithinEachPackage(): void
@@ -234,7 +224,8 @@ JSON
     {
         $contents = file_get_contents($path);
         self::assertIsString($contents);
-        $configuration = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
+        $configuration = json_decode($contents, true);
+        self::assertSame(JSON_ERROR_NONE, json_last_error());
         self::assertIsArray($configuration);
 
         $result = [];

@@ -1,11 +1,11 @@
 {
     "name": "webidea24/magento-composer-patches",
-    "description": "Builds and synchronizes remote Magento Composer patches.",
+    "description": "Synchronizes remote Magento Composer patch URLs.",
     "type": "composer-plugin",
     "keywords": ["dev", "magento"],
     "license": "MIT",
     "require": {
-        "php": "^8.1",
+        "php": "^7.2",
         "composer-plugin-api": "^2.0"
     },
     "autoload": {
@@ -24,8 +24,7 @@
         "symplify/easy-coding-standard": "*"
     },
     "scripts": {
-        "test": "phpunit",
-        "build-patches": "php bin/build-patches.php"
+        "test": "phpunit"
     },
     "extra": {
         "class": "Webidea24\\MagentoComposerPatches\\MagentoComposerPatchesPlugin"

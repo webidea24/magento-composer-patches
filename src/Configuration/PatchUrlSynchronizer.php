@@ -6,7 +6,6 @@ namespace Webidea24\MagentoComposerPatches\Configuration;
 
 use Composer\Composer;
 use InvalidArgumentException;
-use JsonException;
 use RuntimeException;
 use Webidea24\MagentoComposerPatches\Remote\PatchMetadataClient;
 
@@ -17,9 +16,14 @@ final class PatchUrlSynchronizer
 {
     private const DEFAULT_PATCH_BASE_URL = 'https://patches.webidea.dev/security/magento/';
 
-    public function __construct(
-        private readonly Composer $composer,
-    ) {
+    /**
+     * @var Composer
+     */
+    private $composer;
+
+    public function __construct(Composer $composer)
+    {
+        $this->composer = $composer;
     }
 
     public function synchronize(): int
@@ -39,19 +43,7 @@ final class PatchUrlSynchronizer
             $patchesFile['path'],
             $patchBaseUrl,
             $patches,
-            $patchesFile['isComposerFile'],
-        );
-    }
-
-    public function remove(): int
-    {
-        $composerFile = $this->getRootComposerFile();
-        $composerConfiguration = $this->readComposerConfiguration($composerFile);
-        $patchesFile = $this->resolvePatchConfigurationFile($composerFile, $composerConfiguration);
-
-        return (new ComposerPatchMap())->removeGeneratedPatchUrls(
-            $patchesFile['path'],
-            $patchesFile['isComposerFile'],
+            $patchesFile['isComposerFile']
         );
     }
 
@@ -121,13 +113,12 @@ final class PatchUrlSynchronizer
             throw new RuntimeException(sprintf('Cannot read Composer configuration: %s', $composerFile));
         }
 
-        try {
-            $configuration = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException $jsonException) {
-            throw new RuntimeException(sprintf('Cannot parse Composer configuration %s: %s', $composerFile, $jsonException->getMessage()), 0, $jsonException);
+        $configuration = json_decode($contents, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new RuntimeException(sprintf('Cannot parse Composer configuration %s: %s', $composerFile, json_last_error_msg()));
         }
 
-        if (!is_array($configuration) || array_is_list($configuration)) {
+        if (!is_array($configuration) || $this->isList($configuration)) {
             throw new RuntimeException(sprintf('Composer configuration must contain a JSON object: %s', $composerFile));
         }
 
@@ -176,8 +167,25 @@ final class PatchUrlSynchronizer
 
     private function isAbsolutePath(string $path): bool
     {
-        return str_starts_with($path, DIRECTORY_SEPARATOR)
+        return substr($path, 0, strlen(DIRECTORY_SEPARATOR)) === DIRECTORY_SEPARATOR
             || (bool) preg_match('{^[A-Za-z]:[\\/]}', $path);
+    }
+
+    /**
+     * @param array<mixed> $value
+     */
+    private function isList(array $value): bool
+    {
+        $expectedKey = 0;
+        foreach ($value as $key => $_item) {
+            if ($key !== $expectedKey) {
+                return false;
+            }
+
+            ++$expectedKey;
+        }
+
+        return true;
     }
 
     private function toExactMagentoVersion(string $version): ?string

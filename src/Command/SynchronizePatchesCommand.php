@@ -24,7 +24,7 @@ final class SynchronizePatchesCommand extends BaseCommand
             ->write(sprintf(
                 '<info>Merged %d remote package patch%s.</info>',
                 $synchronizedPatches,
-                $synchronizedPatches === 1 ? '' : 'es',
+                $synchronizedPatches === 1 ? '' : 'es'
             ));
 
         return 0;
