@@ -170,6 +170,42 @@ JSON
         ], array_keys($configuration['patches']['magento/framework']));
     }
 
+    public function testItPreservesExistingPackagePositionsWhenReplacingGeneratedPatches(): void
+    {
+        $patchesFile = $this->temporaryDirectory . '/composer.patches.json';
+        file_put_contents(
+            $patchesFile,
+            <<<'JSON'
+{
+    "patches": {
+        "magento/module-catalog": {
+            "Custom catalog patch": "patches/catalog.patch"
+        },
+        "magento/module-customer": {
+            "[webidea24/magento-composer-patches] Old patch": "https://old.example/customer.patch"
+        },
+        "magento/module-sales": {
+            "Custom sales patch": "patches/sales.patch"
+        }
+    }
+}
+JSON
+        );
+
+        (new ComposerPatchMap())->replaceGeneratedPatchUrls($patchesFile, 'https://patches.example/magento', [[
+            'description' => 'APSB26-138_2026-09-001-CE',
+            'package' => 'magento/module-customer',
+            'path' => '2.4.7-p10/APSB26-138_2026-09-001-CE/customer.patch',
+        ]]);
+
+        $configuration = $this->readJson($patchesFile);
+        self::assertSame([
+            'magento/module-catalog',
+            'magento/module-customer',
+            'magento/module-sales',
+        ], array_keys($configuration['patches']));
+    }
+
     /**
      * @return array<string, string>
      */

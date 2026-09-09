@@ -25,7 +25,7 @@ final class ComposerPatchMap
     ): int {
         $configuration = $this->readConfiguration($patchesFile);
         $patchMap = $this->readPatchMap($configuration, $patchesFile, $mergeIntoComposerExtra);
-        $patchMap = $this->removeGeneratedEntriesFromPatchMap($patchMap)['patchMap'];
+        $patchMap = $this->removeGeneratedEntriesFromPatchMap($patchMap, removeEmptyPackages: false)['patchMap'];
 
         $generatedPatches = $this->createRemotePatchUrls($baseUrl, $patches);
 
@@ -35,6 +35,7 @@ final class ComposerPatchMap
                 $patchMap[$packageName][$description] = $url;
             }
         }
+        $patchMap = $this->removeEmptyPackages($patchMap);
 
         $this->writePatchMap($configuration, $patchesFile, $mergeIntoComposerExtra, $patchMap);
         $this->writeConfiguration($patchesFile, $configuration);
@@ -163,7 +164,7 @@ final class ComposerPatchMap
      * @param array<string, array<string, string>> $patchMap
      * @return array{patchMap: array<string, array<string, string>>, count: int}
      */
-    private function removeGeneratedEntriesFromPatchMap(array $patchMap): array
+    private function removeGeneratedEntriesFromPatchMap(array $patchMap, bool $removeEmptyPackages = true): array
     {
         $count = 0;
         foreach ($patchMap as $packageName => $packagePatches) {
@@ -174,7 +175,7 @@ final class ComposerPatchMap
                 }
             }
 
-            if ($patchMap[$packageName] === []) {
+            if ($removeEmptyPackages && $patchMap[$packageName] === []) {
                 unset($patchMap[$packageName]);
             }
         }
@@ -183,6 +184,21 @@ final class ComposerPatchMap
             'patchMap' => $patchMap,
             'count' => $count,
         ];
+    }
+
+    /**
+     * @param array<string, array<string, string>> $patchMap
+     * @return array<string, array<string, string>>
+     */
+    private function removeEmptyPackages(array $patchMap): array
+    {
+        foreach ($patchMap as $packageName => $packagePatches) {
+            if ($packagePatches === []) {
+                unset($patchMap[$packageName]);
+            }
+        }
+
+        return $patchMap;
     }
 
     /**
