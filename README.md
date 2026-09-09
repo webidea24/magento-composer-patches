@@ -80,7 +80,18 @@ this package, so synchronization and removal leave project-maintained patches un
 
 ### Included security updates
 
-#### Security update: August 2026
+#### Security updates: September 2026
+
+##### Patch 2026-09-001
+
+| Magento Open Source version | Included |
+|-----------------------------|----------|
+| `2.4.6-p15`                 | ✅       |
+| `2.4.7-p10`                 | ✅       |
+| `2.4.8-p5`                  | ✅       |
+| `2.4.9`                     | ✅       |
+
+#### Security updates: August 2026
 
 ##### Patch 2026-08-001
 
