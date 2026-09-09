@@ -123,7 +123,7 @@ final class PatchFileBuilder
         }
 
         foreach ($patchesByMagentoVersion as $magentoVersion => $patchesByName) {
-            ksort($patchesByName, SORT_STRING);
+            ksort($patchesByName, SORT_NATURAL);
             $patches = [];
             foreach ($patchesByName as $patchName => $files) {
                 usort($files, static fn (array $first, array $second): int => $first['path'] <=> $second['path']);

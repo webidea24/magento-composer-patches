@@ -88,6 +88,52 @@ PATCH
         ], json_decode($metadata, true, 512, JSON_THROW_ON_ERROR));
     }
 
+    public function testItSortsPatchNamesNaturallyInMetadata(): void
+    {
+        $sourceDirectory = $this->temporaryDirectory . '/package/magento-patches/2.4.9/isolated-patches';
+        mkdir($sourceDirectory, 0777, true);
+        foreach ([
+            'APSB26-73_2026-07-001-CE.patch',
+            'APSB26-92_2026-08-001-CE.patch',
+            'APSB26-138_2026-09-001-CE.patch',
+            'APSB26-146.patch',
+        ] as $patchName) {
+            file_put_contents(
+                $sourceDirectory . '/' . $patchName,
+                <<<'PATCH'
+diff --git a/vendor/magento/module-customer/Model/Customer.php b/vendor/magento/module-customer/Model/Customer.php
+--- a/vendor/magento/module-customer/Model/Customer.php
++++ b/vendor/magento/module-customer/Model/Customer.php
+@@ -1 +1 @@
+-before
++after
+PATCH
+            );
+        }
+
+        $outputDirectory = $this->temporaryDirectory . '/build/patches';
+        (new PatchFileBuilder())->build($this->temporaryDirectory . '/package', $outputDirectory, [
+            '2.4.9' => [
+                'nginx.conf.sample' => [
+                    'package' => 'magento/magento2-base',
+                    'source' => 'nginx.conf.sample',
+                ],
+            ],
+        ]);
+
+        $metadata = file_get_contents($outputDirectory . '/2.4.9/meta.json');
+        self::assertIsString($metadata);
+        $decodedMetadata = json_decode($metadata, true, 512, JSON_THROW_ON_ERROR);
+        self::assertIsArray($decodedMetadata);
+        self::assertSame([
+            '249-2026-07-001-CE',
+            'APSB26-73_2026-07-001-CE',
+            'APSB26-92_2026-08-001-CE',
+            'APSB26-138_2026-09-001-CE',
+            'APSB26-146',
+        ], array_column($decodedMetadata['patches'], 'name'));
+    }
+
     private function removeDirectory(string $directory): void
     {
         foreach (scandir($directory) ?: [] as $entry) {

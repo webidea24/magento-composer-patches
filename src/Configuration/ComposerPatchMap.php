@@ -76,6 +76,11 @@ final class ComposerPatchMap
                 . '/' . ltrim($patch['path'], '/');
         }
 
+        foreach ($generatedPatches as &$packagePatches) {
+            uksort($packagePatches, 'strnatcmp');
+        }
+        unset($packagePatches);
+
         return $generatedPatches;
     }
 

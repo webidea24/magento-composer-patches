@@ -129,6 +129,47 @@ JSON
         );
     }
 
+    public function testItSortsGeneratedPatchNamesNaturallyWithinEachPackage(): void
+    {
+        $patchesFile = $this->temporaryDirectory . '/composer.patches.json';
+        (new ComposerPatchMap())->replaceGeneratedPatchUrls($patchesFile, 'https://patches.example/magento', [
+            [
+                'description' => 'APSB26-138_2026-09-001-CE',
+                'package' => 'magento/framework',
+                'path' => '2.4.7-p10/APSB26-138_2026-09-001-CE/framework.patch',
+            ],
+            [
+                'description' => 'APSB26-146',
+                'package' => 'magento/framework',
+                'path' => '2.4.7-p10/APSB26-146/framework.patch',
+            ],
+            [
+                'description' => 'APSB26-73_2026-07-001-CE',
+                'package' => 'magento/framework',
+                'path' => '2.4.7-p10/APSB26-73_2026-07-001-CE/framework.patch',
+            ],
+            [
+                'description' => 'APSB26-73',
+                'package' => 'magento/framework',
+                'path' => '2.4.7-p10/APSB26-73/framework.patch',
+            ],
+            [
+                'description' => 'APSB26-92_2026-08-001-CE',
+                'package' => 'magento/framework',
+                'path' => '2.4.7-p10/APSB26-92_2026-08-001-CE/framework.patch',
+            ],
+        ]);
+
+        $configuration = $this->readJson($patchesFile);
+        self::assertSame([
+            '[webidea24/magento-composer-patches] APSB26-73',
+            '[webidea24/magento-composer-patches] APSB26-73_2026-07-001-CE',
+            '[webidea24/magento-composer-patches] APSB26-92_2026-08-001-CE',
+            '[webidea24/magento-composer-patches] APSB26-138_2026-09-001-CE',
+            '[webidea24/magento-composer-patches] APSB26-146',
+        ], array_keys($configuration['patches']['magento/framework']));
+    }
+
     /**
      * @return array<string, string>
      */
