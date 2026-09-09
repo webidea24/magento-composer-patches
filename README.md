@@ -91,7 +91,7 @@ this package, so synchronization and removal leave project-maintained patches un
 | `2.4.8-p5`                  | ✅       |
 | `2.4.9`                     | ✅       |
 
-##### Patch 2026-09-001
+##### Patch 2026-09-001 (APSB26-138)
 
 | Magento Open Source version | Included |
 |-----------------------------|----------|
@@ -102,7 +102,7 @@ this package, so synchronization and removal leave project-maintained patches un
 
 #### Security updates: August 2026
 
-##### Patch 2026-08-001
+##### Patch 2026-08-001 (APSB26-92)
 
 | Magento Open Source version | Included |
 |-----------------------------|----------|
@@ -113,7 +113,7 @@ this package, so synchronization and removal leave project-maintained patches un
 
 #### Security updates: July 2026
 
-##### Patch 2026-07-001
+##### Patch 2026-07-001 (APSB26-73)
 
 | Magento Open Source version | Included |
 |-----------------------------|----------|
