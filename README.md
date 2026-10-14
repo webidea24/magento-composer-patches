@@ -80,6 +80,17 @@ this package, so synchronization and removal leave project-maintained patches un
 
 ### Included security updates
 
+#### Security updates: October 2026
+
+#### Security hotfix: APSB26-153
+
+| Magento Open Source version | Included |
+|-----------------------------|----------|
+| `2.4.6-p15`                 | ❌       |
+| `2.4.7-p10`                 | ✅       |
+| `2.4.8-p5`                  | ✅       |
+| `2.4.9`                     | ✅       |
+
 #### Security updates: September 2026
 
 #### Security hotfix: APSB26-146
